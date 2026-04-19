@@ -1,4 +1,4 @@
-name: "Testing"
+name: "Test"
 description: "Runs tests at the specified git ref"
 inputs:
   ref:
