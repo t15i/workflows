@@ -1,0 +1,50 @@
+name: "Create Release Draft"
+description: >
+  Generates a draft release, calculating the next semantic version
+  from PR labels, and creating release notes from the target branch or commit
+on: 
+  workflow_call:
+    inputs:
+      target: 
+        description: "Release target to be used"
+        type: string
+        required: true
+      semver-bump-labels:
+        description: "Comma-separated list of PR labels used to bump version"
+        type: string
+        required: true
+jobs:
+  draft:
+    name: "Generate Release Draft"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target }}
+          
+      - name: "Get base version and tag"
+        id: basics
+        run: |
+          version=$(npm pkg get version | tr -d \")
+          echo "version=${version}" >> "$GITHUB_OUTPUT" 
+          echo "tag=v${version}" >> "$GITHUB_OUTPUT" 
+
+      - name: "Bump version"
+        id: bumper
+        uses: t15i/semver-bump-action@v1.0.0
+        with:
+          labels: ${{ inputs.semver-bump-labels }}
+          basehead: ${{ steps.basics.outputs.tag }}...${{ inputs.target }}
+          version: ${{ steps.basics.outputs.version }}
+          
+      - name: 'Create draft'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v${{ steps.bumper.outputs.bumped_version }} \
+            --draft \
+            --generate-notes \
+            --notes-start-tag ${{ steps.basics.outputs.tag }} \
+            --target ${{ inputs.target }}

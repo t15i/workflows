@@ -1,0 +1,51 @@
+name: "Packaging"
+description: >
+  Builds the package, optionally updates its version, creates an npm tarball, 
+  and uploads it as a GitHub Actions artifact
+inputs:
+  ref:
+    description: "Git ref to check out for packaging"
+  version:
+    description: "Optional package version to be set before packing"
+outputs:
+  artifact-name:
+    description: "Name of uploaded artifact"
+    value: ${{ steps.pack.outputs.package_name }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.ref }}
+
+    - uses: actions/setup-node@v6
+      with:
+        node-version-file: .nvmrc
+        
+    - name: "Bump package version"
+      if: inputs.version != ''
+      shell: bash
+      run: npm version --commit-hooks false --git-tag-version false "${{ inputs.version }}"
+
+    - name: "Install dependencies"
+      shell: bash
+      run: npm ci
+
+    - name: "Build package"
+      shell: bash
+      run: npm run ci:build
+
+    - name: "Pack"
+      id: pack
+      shell: bash
+      run: |
+        package_path=$(npm pack | tail -n 1)
+        echo "package_path=./$package_path" >> "$GITHUB_OUTPUT"
+        echo "package_name=${package_path%.tgz}" >> "$GITHUB_OUTPUT" 
+
+    - name: "Upload artifact"
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.pack.outputs.package_name }}
+        path: ${{ steps.pack.outputs.package_path }}
+        overwrite: true

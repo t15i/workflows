@@ -1,0 +1,74 @@
+name: "Publish Release"
+description: >
+  Packages a tagged release, publishes it to npm, 
+  and commits the released version back to the specified branch
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Git tag to package and publish"
+        type: string
+        required: true
+      branch:
+        description: "Branch to which version will be pushed after publication"
+        type: string
+        required: true
+      git-user-name:
+        description: "Git user name used for the version bump commit"
+        type: string
+        default: release-ci[bot]
+      git-user-email:
+        description: "Git user email used for the version bump commit"
+        type: string
+    secrets:
+      RELEASE_BOT_ID:
+        required: true
+      RELEASE_BOT_PRIVATE_KEY:
+        required: true
+      NPM_TOKEN:
+        required: true
+jobs:
+  pack:
+    name: "Pack Package"
+    runs-on: ubuntu-latest
+    steps:
+      - id: pack
+        uses: t15i/workflows/.github/actions/nodejs/pack@main
+        with:
+          ref: ${{ inputs.tag }}
+          version: ${{ inputs.tag }}
+    outputs:
+      artifact-name: ${{ steps.pack.outputs.artifact-name }}
+
+  publish:
+    name: "Publish Package"
+    needs: pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: t15i/workflows/.github/actions/nodejs/publish@main
+        with:
+          registry-url: https://registry.npmjs.org
+          registry-token: ${{ secrets.NPM_TOKEN }}
+          artifact-name: ${{ needs.pack.outputs.artifact-name }}
+
+  commit:
+    name: "Commit Bumped Version"
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - id: token-generator
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASE_BOT_ID }}
+          private-key: ${{ secrets.RELEASE_BOT_PRIVATE_KEY }}
+
+      - uses: t15i/workflows/.github/actions/nodejs/push-version@main
+        with:
+          version: ${{ inputs.tag }}
+          branch: ${{ inputs.branch }}
+          token: ${{ steps.token-generator.outputs.token }}
+          git-user-name: ${{ inputs.git-user-name }}
+          git-user-email: >-
+            ${{ inputs.git-user-email || 
+                format('{0}+{1}@users.noreply.github.com', 
+                       secrets.RELEASE_BOT_ID, inputs.git-user-name) }}

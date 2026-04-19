@@ -1,0 +1,58 @@
+name: "Check Code Quality"
+description: >
+  Runs configurable code quality checks for a Node.js project, 
+  including build, tests, static analysis, and optional type checking
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: "Git ref to be checked"
+        type: string
+      check-lib:
+        description: "Whether to run checks for library source code"
+        type: boolean
+        default: false
+      check-tests:
+        description: "Whether to run checks for test files"
+        type: boolean
+        default: false
+      check-types:
+        description: "Whether to enable type checking during static analysis"
+        type: boolean 
+        default: false
+permissions:
+  contents: read
+jobs:
+  build:
+    name: "Check Build"
+    if: inputs.check-lib
+    runs-on: ubuntu-latest
+    steps:
+      - uses: t15i/workflows/.github/actions/nodejs/check/build@main
+        with:
+          ref: ${{ inputs.ref }}
+
+  test:
+    name: "Testing"
+    if: inputs.check-lib || inputs.check-tests 
+    runs-on: ubuntu-latest
+    steps:
+      - uses: t15i/workflows/actions/nodejs/check/test@main
+        with:
+          ref: ${{ inputs.ref }}
+
+  static:
+    name: "Check Static"
+    if: inputs.check-lib || inputs.check-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: t15i/workflows/.github/actions/nodejs/check/static@main
+        with:
+          ref: ${{ inputs.ref }}
+          scope: >-
+            ${{
+              inputs.check-lib && !inputs.check-tests && 'lib' ||
+              (!inputs.check-lib && inputs.check-tests && 'tests') ||
+              ''
+            }}
+          types: ${{ inputs.check-types }}

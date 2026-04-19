@@ -1,0 +1,48 @@
+name: "Check Static"
+description: >
+  Runs static checks at the specified git ref, including linting, 
+  format validation, and optional type checking
+inputs:
+  ref:
+    description: "Git ref to be checked"
+  types:
+    description: "Enables type checking when a non-empty value is provided"
+  scope:
+    description: "Enables scoped static checks (*:scope)"
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.ref }}
+
+    - uses: actions/setup-node@v6
+      with:
+        node-version-file: .nvmrc
+
+    - name: "Compute script suffix"
+      id: suffix
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const scope = `${{ inputs.scope }}`.trim();
+          const suffix = scope ? `:${scope}` : '';
+          core.setOutput('value', suffix);
+
+    - name: "Install dependencies"
+      shell: bash
+      run: npm ci
+
+    - name: "Lint"
+      shell: bash
+      run: npm run ci:lint${{ steps.suffix.outputs.value }}
+
+    - name: "Check format"
+      shell: bash
+      run: npm run ci:format${{ steps.suffix.outputs.value }}
+
+    - name: "Check types"
+      if: inputs.types != ''
+      shell: bash
+      run: npm run ci:typecheck${{ steps.suffix.outputs.value }}
+      
