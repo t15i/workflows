@@ -13,6 +13,13 @@ on:
         description: "Branch to which version will be pushed after publication"
         type: string
         required: true
+      git-user-name:
+        description: "Git user name used for the version bump commit"
+        type: string
+        default: release-ci[bot]
+      git-user-email:
+        description: "Git user email used for the version bump commit"
+        type: string
     secrets:
       RELEASE_BOT_ID:
         required: true
@@ -60,3 +67,8 @@ jobs:
           version: ${{ inputs.tag }}
           branch: ${{ inputs.branch }}
           token: ${{ steps.token-generator.outputs.token }}
+          git-user-name: ${{ inputs.git-user-name }}
+          git-user-email: >-
+            ${{ inputs.git-user-email || 
+                format('{0}+{1}@users.noreply.github.com', 
+                       secrets.RELEASE_BOT_ID, inputs.git-user-name) }}

@@ -9,6 +9,11 @@ inputs:
     description: "Git branch to be updated"
   token:
     description: "Personal access token used to access to the repository"
+  git-user-name:
+    description: "Git user name used for the version bump commit"
+    default: github-actions[bot]
+  git-user-email:
+    description: "Git user email used for the version bump commit"
 runs:
   using: composite
   steps:
@@ -24,8 +29,8 @@ runs:
     - name: "Configure git user"
       shell: bash
       run: |
-        git config user.name "github-actions"
-        git config user.email "github-actions@users.noreply.github.com"
+        git config user.name "${{ inputs.git-user-name }}"
+        git config user.email "${{ inputs.git-user-email || format('{0}@users.noreply.github.com', inputs.git-user-name) }}" 
         
     - name: "Update package version"
       shell: bash
