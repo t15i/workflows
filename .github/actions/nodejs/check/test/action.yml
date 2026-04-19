@@ -1,0 +1,23 @@
+name: "Testing"
+description: "Runs tests at the specified git ref"
+inputs:
+  ref:
+    description: "Git ref to be checked"
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.ref }}
+
+    - uses: actions/setup-node@v6
+      with:
+        node-version-file: .nvmrc
+
+    - name: "Install dependencies"
+      shell: bash
+      run: npm ci
+
+    - name: "Test"
+      shell: bash
+      run: npm run ci:test

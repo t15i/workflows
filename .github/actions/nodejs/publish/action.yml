@@ -1,0 +1,31 @@
+name: "Publishing"
+description: >
+  Configures the target registry and publishes the specified artifact
+inputs:
+  artifact-name:
+    description: "Name of artifact to be published"
+    required: true
+  registry-url:
+    description: "URL of the npm registry for the package to be published"
+    required: true
+  registry-token:
+    description: "Authentication token for specified registry"
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: "Download artifact"
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+
+    - name: "Setup Registry"
+      uses: actions/setup-node@v6
+      with:
+        registry-url: ${{ inputs.registry-url }}
+        
+    - name: "Publish package"
+      shell: bash
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.registry-token }}
+      run: npm publish ./*.tgz --access public

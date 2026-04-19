@@ -1,0 +1,36 @@
+name: "Update Version"
+description: >
+  Checks out the specified branch, updates the project version and 
+  pushes changes to the remote repository
+inputs:
+  version:
+    description: "New version value to be set"
+  branch:
+    description: "Git branch to be updated"
+  token:
+    description: "Personal access token used to access to the repository"
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.branch }}
+        token: ${{ inputs.token }}
+
+    - uses: actions/setup-node@v6
+      with:
+        node-version-file: .nvmrc
+
+    - name: "Configure git user"
+      shell: bash
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@users.noreply.github.com"
+        
+    - name: "Update package version"
+      shell: bash
+      run: npm version "${{ inputs.version }}" -m "Bump version to %s"
+
+    - name: "Push changes"
+      shell: bash
+      run: git push --tags -f origin ${{ inputs.branch }}
