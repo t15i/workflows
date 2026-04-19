@@ -37,7 +37,7 @@ jobs:
     if: inputs.check-lib || inputs.check-tests 
     runs-on: ubuntu-latest
     steps:
-      - uses: t15i/workflows/actions/nodejs/check/test@main
+      - uses: t15i/workflows/.github/actions/nodejs/check/test@main
         with:
           ref: ${{ inputs.ref }}
 
