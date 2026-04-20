@@ -8,9 +8,9 @@ inputs:
   version:
     description: "Optional package version to be set before packing"
 outputs:
-  artifact-name:
+  package-path:
     description: "Name of uploaded artifact"
-    value: ${{ steps.pack.outputs.package_name }}
+    value: ${{ steps.pack.outputs.package-path }}
 runs:
   using: composite
   steps:
@@ -38,14 +38,4 @@ runs:
     - name: "Pack"
       id: pack
       shell: bash
-      run: |
-        package_path=$(npm pack | tail -n 1)
-        echo "package_path=./$package_path" >> "$GITHUB_OUTPUT"
-        echo "package_name=${package_path%.tgz}" >> "$GITHUB_OUTPUT" 
-
-    - name: "Upload artifact"
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ steps.pack.outputs.package_name }}
-        path: ${{ steps.pack.outputs.package_path }}
-        overwrite: true
+      run: echo "package-path=$(pwd)/$(npm pack | tail -n 1)" >> "$GITHUB_OUTPUT"

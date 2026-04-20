@@ -15,17 +15,18 @@ on:
         required: true
 jobs:
   draft:
-    name: "Generate Release Draft"
-    runs-on: ubuntu-latest
+    name: "Create Release Draft"
     permissions:
       contents: write
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: "Checkout target"
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.target }}
           
-      - name: "Get base version and tag"
-        id: basics
+      - name: "Get base"
+        id: base
         run: |
           version=$(npm pkg get version | tr -d \")
           echo "version=${version}" >> "$GITHUB_OUTPUT" 
@@ -36,15 +37,35 @@ jobs:
         uses: t15i/semver-bump-action@v1.0.0
         with:
           labels: ${{ inputs.semver-bump-labels }}
-          basehead: ${{ steps.basics.outputs.tag }}...${{ inputs.target }}
-          version: ${{ steps.basics.outputs.version }}
-          
-      - name: 'Create draft'
+          basehead: ${{ steps.base.outputs.tag }}...${{ inputs.target }}
+          version: ${{ steps.base.outputs.version }}
+
+      - name: "Compute head"
+        id: head
+        run: |
+          echo "version=${{steps.bumper.outputs.bumped_version}}" >> "$GITHUB_OUTPUT" 
+          echo "tag=v${{steps.bumper.outputs.bumped_version}}" >> "$GITHUB_OUTPUT" 
+
+      - name: "Pack"
+        id: pack
+        uses: t15i/workflows/.github/actions/nodejs/pack@main
+        with:
+          ref: ${{ inputs.target }}
+          version: ${{ steps.head.outputs.version }}
+
+      - name: "Create release draft"
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v${{ steps.bumper.outputs.bumped_version }} \
+          gh release create ${{ steps.head.outputs.value }} \
             --draft \
             --generate-notes \
-            --notes-start-tag ${{ steps.basics.outputs.tag }} \
+            --notes-start-tag ${{ steps.base.outputs.value }} \
             --target ${{ inputs.target }}
+
+      - name: "Upload artifact to release draft"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload ${{ steps.head.outputs.value }} \
+            ${{ steps.pack.outputs.package-path }}
