@@ -57,15 +57,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create ${{ steps.head.outputs.value }} \
+          gh release create ${{ steps.head.outputs.tag }} \
             --draft \
             --generate-notes \
-            --notes-start-tag ${{ steps.base.outputs.value }} \
+            --notes-start-tag ${{ steps.base.outputs.tag }} \
             --target ${{ inputs.target }}
 
       - name: "Upload artifact to release draft"
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload ${{ steps.head.outputs.value }} \
+          gh release upload ${{ steps.head.outputs.tag }} \
             ${{ steps.pack.outputs.package-path }}
