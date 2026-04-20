@@ -7,13 +7,13 @@ inputs:
     description: "New version value to be set"
   branch:
     description: "Git branch to be updated"
-  token:
-    description: "Personal access token used to access to the repository"
   git-user-name:
     description: "Git user name used for the version bump commit"
     default: github-actions[bot]
   git-user-email:
     description: "Git user email used for the version bump commit"
+  token:
+    description: "Personal access token used to access to the repository"
 runs:
   using: composite
   steps:
